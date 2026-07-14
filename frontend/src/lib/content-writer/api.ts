@@ -10,7 +10,11 @@ import type {
   PublishResult,
 } from "./types";
 
-const SEO_API_URL = process.env.NEXT_PUBLIC_SEO_API_URL ?? "http://localhost:5051";
+const SEO_API_URL =
+  process.env.NEXT_PUBLIC_SEO_API_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://content-writer-backend-production.up.railway.app"
+    : "http://localhost:5051");
 
 /** Content Writer routes are hosted on GeekSeoBackend (same origin as SEO API). */
 const API_BASE_URL = SEO_API_URL;
