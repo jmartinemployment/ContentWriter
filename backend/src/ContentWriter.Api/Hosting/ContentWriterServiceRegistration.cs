@@ -65,6 +65,7 @@ public static class ContentWriterServiceRegistration
         services.AddScoped<ISoftwareApplicationSchemaBuilder, SoftwareApplicationSchemaBuilder>();
         services.AddScoped<ITechnicalArticleSchemaBuilder, TechnicalArticleSchemaBuilder>();
         services.AddScoped<IBlogPostingSchemaBuilder, BlogPostingSchemaBuilder>();
+        services.AddScoped<IToolPageGenerator, ToolPageGenerator>();
         services.AddScoped<IContentGenerationOrchestrator, ContentGenerationOrchestrator>();
         services.AddHttpClient<IGeekBackendClient, GeekBackendClient>();
         services.AddScoped<IGeekBlogPublishService, GeekBlogPublishService>();

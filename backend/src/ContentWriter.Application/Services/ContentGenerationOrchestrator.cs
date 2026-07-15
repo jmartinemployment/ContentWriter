@@ -21,6 +21,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
     private readonly IJsonLdParserService _jsonLdParser;
     private readonly ITechnicalArticleSchemaBuilder _articleSchemaBuilder;
     private readonly IBlogPostingSchemaBuilder _blogSchemaBuilder;
+    private readonly IToolPageGenerator _toolPageGenerator;
     private readonly CompanyProfileOptions _companyProfile;
     private readonly ILogger<ContentGenerationOrchestrator> _logger;
 
@@ -31,6 +32,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
         IJsonLdParserService jsonLdParser,
         ITechnicalArticleSchemaBuilder articleSchemaBuilder,
         IBlogPostingSchemaBuilder blogSchemaBuilder,
+        IToolPageGenerator toolPageGenerator,
         IOptions<CompanyProfileOptions> companyProfile,
         ILogger<ContentGenerationOrchestrator> logger)
     {
@@ -40,6 +42,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
         _jsonLdParser = jsonLdParser;
         _articleSchemaBuilder = articleSchemaBuilder;
         _blogSchemaBuilder = blogSchemaBuilder;
+        _toolPageGenerator = toolPageGenerator;
         _companyProfile = companyProfile.Value;
         _logger = logger;
     }
@@ -54,6 +57,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
 
         RemoveGeneratedContents(project,
             GeneratedContentType.TechnicalArticle,
+            GeneratedContentType.ToolPost,
             GeneratedContentType.BlogPost,
             GeneratedContentType.SocialFacebook,
             GeneratedContentType.SocialLinkedIn,
@@ -130,7 +134,46 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
     public async Task<GeneratedContentSet> GeneratePillarAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
         await GeneratePillarPlanAsync(projectId, cancellationToken);
-        return await GeneratePillarBodyAsync(projectId, cancellationToken);
+        await GeneratePillarBodyAsync(projectId, cancellationToken);
+        return await GenerateToolPagesAsync(projectId, cancellationToken);
+    }
+
+    public async Task<GeneratedContentSet> GenerateToolPagesAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        var project = await LoadProjectForGenerationAsync(projectId, cancellationToken);
+        var articleRow = RequireCompletePillar(project);
+        var context = BuildContext(project);
+        var provider = _providerFactory.Get(project.PreferredProvider);
+        var metadata = ToMetadataDraft(articleRow);
+        var articleUrl = CombineUrl(context.ArticleBaseUrl, articleRow.Slug);
+
+        _logger.LogInformation("Generating tool pages for project {ProjectId} via {Provider}", projectId, provider.ProviderType);
+
+        RemoveGeneratedContents(project, GeneratedContentType.ToolPost);
+
+        var generation = await _toolPageGenerator.GenerateToolPagesAsync(
+            project,
+            articleRow,
+            metadata,
+            context,
+            provider,
+            articleUrl,
+            cancellationToken);
+
+        foreach (var toolRow in generation.ToolPosts)
+        {
+            await AddContentAsync(project, provider.ProviderType, toolRow, cancellationToken);
+        }
+
+        if (generation.Outcome != ToolGenerationOutcome.Success)
+        {
+            _logger.LogWarning(
+                "Tool page generation for project {ProjectId} produced no tools: {Outcome}",
+                projectId, generation.Outcome);
+        }
+
+        await SaveProjectAsync(project, ProjectStatus.ReadyForGeneration, cancellationToken);
+        return Assemble(project);
     }
 
     public async Task<GeneratedContentSet> GenerateBlogAsync(Guid projectId, CancellationToken cancellationToken = default)
@@ -362,6 +405,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
     {
         await GeneratePillarPlanAsync(projectId, cancellationToken);
         await GeneratePillarBodyAsync(projectId, cancellationToken);
+        await GenerateToolPagesAsync(projectId, cancellationToken);
         await GenerateBlogAsync(projectId, cancellationToken);
         await GenerateSocialAsync(projectId, cancellationToken);
         await GenerateColdOutreachAsync(projectId, cancellationToken);
@@ -545,6 +589,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
             AuthorName: _companyProfile.AuthorName,
             ArticleBaseUrl: _companyProfile.ArticleBaseUrl,
             BlogBaseUrl: _companyProfile.BlogBaseUrl,
+            ToolBaseUrl: _companyProfile.ToolBaseUrl,
             ImplementerPositioning: _companyProfile.ImplementerPositioning,
             Provider: project.PreferredProvider);
     }
@@ -867,6 +912,7 @@ public class CompanyProfileOptions
     public string AuthorName { get; set; } = "Geek At Your Spot Editorial Team";
     public string ArticleBaseUrl { get; set; } = "https://seo.geekatyourspot.com/articles";
     public string BlogBaseUrl { get; set; } = "https://seo.geekatyourspot.com/blog";
+    public string ToolBaseUrl { get; set; } = "https://seo.geekatyourspot.com/tools";
 
     /// <summary>How the publisher positions AI implementation services in pillar Tools sections.</summary>
     public string ImplementerPositioning { get; set; } =

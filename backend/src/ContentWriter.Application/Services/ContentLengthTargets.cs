@@ -37,6 +37,18 @@ public static class ContentLengthTargets
         "Standard listicles and guides are actionable, step-by-step tutorials that require substantial context, " +
         "data, and layout formatting. Used when the reader needs a practical walkthrough, not a macro overview.";
 
+    // Tool pages — comprehensive single-platform guides for each app in the pillar Tools section.
+    public const int ToolMinWords = 1_500;
+    public const int ToolTargetMinWords = 1_500;
+    public const int ToolTargetMaxWords = 2_500;
+    public const int ToolHardMaxWords = 2_500;
+
+    public const string ToolEditorialDefinition =
+        "Tool pages are comprehensive guides for a single platform — deep implementation context, " +
+        "capabilities, considerations, and guidance on when to use it.";
+
+    public static string ToolRangeLabel => $"{ToolMinWords:N0}–{ToolTargetMaxWords:N0}";
+
     // News & quick updates (reference for future content types).
     public const int NewsMinWords = 400;
     public const int NewsMaxWords = 800;

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ContentWriter.Application.DTOs;
 
 namespace ContentWriter.Application.Services.SchemaBuilders;
 
@@ -9,6 +10,9 @@ public interface ISoftwareApplicationSchemaBuilder
 {
     IReadOnlyList<Dictionary<string, object?>> BuildNodes(IReadOnlyList<SoftwareApplicationDescriptor> applications);
     string BuildGraph(IReadOnlyList<SoftwareApplicationDescriptor> applications);
+
+    /// <summary>Full JSON+LD for a standalone tool overview page (primary node: SoftwareApplication).</summary>
+    string BuildToolPage(ContentMetadata metadata, string pillarArticleUrl, SoftwareApplicationDescriptor about);
 }
 
 public class SoftwareApplicationSchemaBuilder : ISoftwareApplicationSchemaBuilder
@@ -42,6 +46,46 @@ public class SoftwareApplicationSchemaBuilder : ISoftwareApplicationSchemaBuilde
         };
 
         return JsonSerializer.Serialize(graph, JsonOptions);
+    }
+
+    public string BuildToolPage(ContentMetadata metadata, string pillarArticleUrl, SoftwareApplicationDescriptor about)
+    {
+        var node = BuildNode(about);
+        node["@context"] = "https://schema.org";
+        node["headline"] = metadata.Headline;
+        node["description"] = metadata.Description;
+        node["url"] = metadata.CanonicalUrl;
+        node["image"] = new[] { metadata.MainImageUrl };
+        node["author"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "Person",
+            ["name"] = metadata.AuthorName
+        };
+        node["publisher"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "Organization",
+            ["name"] = metadata.PublisherName,
+            ["logo"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ImageObject",
+                ["url"] = metadata.PublisherLogoUrl
+            }
+        };
+        node["datePublished"] = metadata.DatePublishedUtc.ToString("O");
+        node["dateModified"] = metadata.DateModifiedUtc.ToString("O");
+        node["mainEntityOfPage"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "WebPage",
+            ["@id"] = metadata.CanonicalUrl
+        };
+        node["keywords"] = string.Join(", ", metadata.Keywords);
+        node["subjectOf"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "TechnicalArticle",
+            ["@id"] = pillarArticleUrl
+        };
+
+        return JsonSerializer.Serialize(node, JsonOptions);
     }
 
     private static Dictionary<string, object?> BuildNode(SoftwareApplicationDescriptor application)

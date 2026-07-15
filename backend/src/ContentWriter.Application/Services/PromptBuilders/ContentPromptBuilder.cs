@@ -53,6 +53,30 @@ public interface IContentPromptBuilder
         string articleUrl,
         string blogUrl,
         IReadOnlyList<ImagePromptSectionTarget> sections);
+
+    ChatCompletionRequest BuildToolBodyPrompt(
+        ProjectGenerationContext context,
+        ArticleMetadataDraft pillarMetadata,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string toolSlug);
+
+    ChatCompletionRequest BuildToolMetadataPrompt(
+        ProjectGenerationContext context,
+        ArticleMetadataDraft pillarMetadata,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string bodyHtml);
+
+    ChatCompletionRequest BuildToolWordCountExpansionPrompt(
+        ProjectGenerationContext context,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string currentBodyHtml,
+        int currentWordCount);
+
+    ChatCompletionRequest BuildToolWordCountTrimPrompt(
+        ProjectGenerationContext context,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string currentBodyHtml,
+        int currentWordCount);
 }
 
 public class ContentPromptBuilder : IContentPromptBuilder
@@ -506,6 +530,126 @@ public class ContentPromptBuilder : IContentPromptBuilder
         return new ChatCompletionRequest(
             Messages: new List<ChatMessage> { new(ChatRole.System, system), new(ChatRole.User, user.ToString()) },
             Temperature: 0.7,
+            MaxOutputTokens: 8192);
+    }
+
+    private const string ToolMetadataJsonContract =
+        "{\"departmentListExcerpt\": string (1-2 sentences for tools hub cards), \"heroExcerpt\": string (1-2 sentences, blurb under tool page H1), \"newspaperExcerpt\": string (1-2 sentences for newspaper sponsored wire), \"toolPageExcerpt\": string (1-2 sentences for newspaper tool content column), \"advertisement\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt), \"metaDescription\": string (max 160 chars, SEO only, distinct from the other five)}";
+
+    public ChatCompletionRequest BuildToolBodyPrompt(
+        ProjectGenerationContext context,
+        ArticleMetadataDraft pillarMetadata,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string toolSlug)
+    {
+        var system = new StringBuilder()
+            .AppendLine("You are a senior technical writer for an IT consulting firm.")
+            .AppendLine($"Editorial standard: {ContentLengthTargets.ToolEditorialDefinition}")
+            .AppendLine("Write a tool overview page as HTML only (no markdown, no JSON wrapper).")
+            .AppendLine("This page is published with schema.org SoftwareApplication metadata — expert technical tone, not breaking news.")
+            .AppendLine("Use <h2> for main sections and <h3> for subsections with multiple <p> paragraphs.")
+            .AppendLine("Start at the first <h2> — no introductory paragraphs before it.")
+            .AppendLine("Required <h2> sections: Overview, Key Capabilities, Implementation Considerations, When to Use.")
+            .AppendLine($"Target at least {ContentLengthTargets.ToolMinWords:N0} words (aim for {ContentLengthTargets.ToolTargetMinWords:N0}-{ContentLengthTargets.ToolTargetMaxWords:N0}). Hard maximum {ContentLengthTargets.ToolHardMaxWords:N0}. Do not stop early.")
+            .ToString();
+
+        var user = new StringBuilder()
+            .AppendLine($"Target keyword context: {context.TargetKeyword}")
+            .AppendLine($"Pillar topic: {pillarMetadata.Title}")
+            .AppendLine($"Tool name: {app.Name}")
+            .AppendLine($"Tool summary from pillar: {app.Description ?? "N/A"}")
+            .AppendLine($"Public path: /tools/{toolSlug}")
+            .AppendLine("Write expert third-person technical prose focused on this single platform.")
+            .ToString();
+
+        return new ChatCompletionRequest(
+            Messages: [new(ChatRole.System, system), new(ChatRole.User, user.ToString())],
+            Temperature: 0.5,
+            MaxOutputTokens: 8192);
+    }
+
+    public ChatCompletionRequest BuildToolMetadataPrompt(
+        ProjectGenerationContext context,
+        ArticleMetadataDraft pillarMetadata,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string bodyHtml)
+    {
+        var system = new StringBuilder()
+            .AppendLine("You write presentation metadata for a B2B tool overview page (schema.org SoftwareApplication).")
+            .AppendLine("Respond with ONLY a single valid JSON object — no markdown fences:")
+            .AppendLine(ToolMetadataJsonContract)
+            .AppendLine("departmentListExcerpt, heroExcerpt, newspaperExcerpt, toolPageExcerpt, advertisement, and metaDescription must each use different wording.")
+            .ToString();
+
+        var user = new StringBuilder()
+            .AppendLine($"Target keyword: {context.TargetKeyword}")
+            .AppendLine($"Pillar topic: {pillarMetadata.Title}")
+            .AppendLine($"Tool name: {app.Name}")
+            .AppendLine()
+            .AppendLine("Tool page body (for context):")
+            .AppendLine(StripHtmlExcerpt(bodyHtml, 2000))
+            .ToString();
+
+        return new ChatCompletionRequest(
+            Messages: [new(ChatRole.System, system), new(ChatRole.User, user.ToString())],
+            Temperature: 0.55,
+            MaxOutputTokens: 1024);
+    }
+
+    public ChatCompletionRequest BuildToolWordCountExpansionPrompt(
+        ProjectGenerationContext context,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string currentBodyHtml,
+        int currentWordCount)
+    {
+        var wordsNeeded = ContentLengthTargets.ToolMinWords - currentWordCount;
+        var system = new StringBuilder()
+            .AppendLine("You are a senior technical writer. Expand the tool page HTML to meet the minimum word count.")
+            .AppendLine("Return ONLY the full revised HTML body — no markdown, no JSON.")
+            .AppendLine("Preserve all existing <h2> section headings and structure; add substantive depth under each section.")
+            .AppendLine($"Minimum required: {ContentLengthTargets.ToolMinWords:N0} words. Hard maximum: {ContentLengthTargets.ToolHardMaxWords:N0} words.")
+            .ToString();
+
+        var user = new StringBuilder()
+            .AppendLine($"Tool: {app.Name}")
+            .AppendLine($"Target keyword: {context.TargetKeyword}")
+            .AppendLine($"Current length: {currentWordCount:N0} words. Add at least {Math.Max(wordsNeeded, 400):N0} words of substantive material.")
+            .AppendLine()
+            .AppendLine("Current HTML:")
+            .AppendLine(currentBodyHtml)
+            .ToString();
+
+        return new ChatCompletionRequest(
+            Messages: [new(ChatRole.System, system), new(ChatRole.User, user.ToString())],
+            Temperature: 0.45,
+            MaxOutputTokens: 8192);
+    }
+
+    public ChatCompletionRequest BuildToolWordCountTrimPrompt(
+        ProjectGenerationContext context,
+        SchemaBuilders.SoftwareApplicationDescriptor app,
+        string currentBodyHtml,
+        int currentWordCount)
+    {
+        var system = new StringBuilder()
+            .AppendLine("You are a senior technical writer. Trim the tool page HTML to meet the maximum word count.")
+            .AppendLine("Return ONLY the full revised HTML body — no markdown, no JSON.")
+            .AppendLine("Preserve all existing <h2> section headings; tighten prose without losing key facts.")
+            .AppendLine($"Target range: {ContentLengthTargets.ToolMinWords:N0}-{ContentLengthTargets.ToolTargetMaxWords:N0} words. Hard maximum: {ContentLengthTargets.ToolHardMaxWords:N0} words.")
+            .ToString();
+
+        var user = new StringBuilder()
+            .AppendLine($"Tool: {app.Name}")
+            .AppendLine($"Target keyword: {context.TargetKeyword}")
+            .AppendLine($"Current length: {currentWordCount:N0} words — trim to at most {ContentLengthTargets.ToolHardMaxWords:N0} words.")
+            .AppendLine()
+            .AppendLine("Current HTML:")
+            .AppendLine(currentBodyHtml)
+            .ToString();
+
+        return new ChatCompletionRequest(
+            Messages: [new(ChatRole.System, system), new(ChatRole.User, user.ToString())],
+            Temperature: 0.35,
             MaxOutputTokens: 8192);
     }
 

@@ -10,8 +10,33 @@ public class GeneratedContent
 
     public GeneratedContentType ContentType { get; set; }
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>Clean H1 for the live page. Falls back to <see cref="Title"/> when unset.</summary>
+    public string? DisplayTitle { get; set; }
+
     public string Slug { get; set; } = string.Empty;
     public string BodyHtml { get; set; } = string.Empty;
+
+    /// <summary>Blurb under the page H1 (pillar, tool, blog).</summary>
+    public string HeroExcerpt { get; set; } = string.Empty;
+
+    /// <summary>Newspaper blog wire column copy (pillar, tool, blog).</summary>
+    public string NewspaperExcerpt { get; set; } = string.Empty;
+
+    /// <summary>Department hub listing copy (/use-cases/{dept}, /tools/{dept}, /blog/{dept}).</summary>
+    public string DepartmentListExcerpt { get; set; } = string.Empty;
+
+    /// <summary>Tool page content slot (tool rows only).</summary>
+    public string ToolPageExcerpt { get; set; } = string.Empty;
+
+    /// <summary>Sponsored ad copy — not an excerpt (tool, blog).</summary>
+    public string? Advertisement { get; set; }
+
+    /// <summary>Top Tools app name this tool row was generated from (tool posts only).</summary>
+    public string? SourceAppName { get; set; }
+
+    /// <summary>Order within the pillar Top Tools section (tool posts only).</summary>
+    public int? SourceAppOrder { get; set; }
 
     public string? MetaDescription { get; set; }
     public List<string> Keywords { get; set; } = new();

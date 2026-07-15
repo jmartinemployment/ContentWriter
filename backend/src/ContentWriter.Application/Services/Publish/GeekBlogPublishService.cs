@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using ContentWriter.Application.Providers;
 using ContentWriter.Application.Services.Export;
+using ContentWriter.Domain.Enums;
 using ContentWriter.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -117,6 +118,30 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 metaDescription: contentSet.Blog.MetaDescription,
                 bodyHtml: contentSet.Blog.BodyHtml,
                 jsonLdOverride: contentSet.BlogJsonLd,
+                categorySlug: categorySlug,
+                cwJobId: project.Id.ToString(),
+                publishedAt: publishedAt,
+                cancellationToken: cancellationToken));
+        }
+
+        var toolRows = project.GeneratedContents
+            .Where(c => c.ContentType == GeneratedContentType.ToolPost
+                && c.WordCount > 0
+                && !string.IsNullOrWhiteSpace(c.Slug))
+            .OrderBy(c => c.SourceAppOrder ?? int.MaxValue)
+            .ToList();
+
+        foreach (var toolRow in toolRows)
+        {
+            published.Add(await PublishOneAsync(
+                contentType: "tool",
+                postType: "Tool",
+                schemaType: "SoftwareApplication",
+                slug: toolRow.Slug,
+                title: string.IsNullOrWhiteSpace(toolRow.DisplayTitle) ? toolRow.Title : toolRow.DisplayTitle!,
+                metaDescription: toolRow.MetaDescription ?? string.Empty,
+                bodyHtml: toolRow.BodyHtml,
+                jsonLdOverride: toolRow.JsonLdSchema,
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,

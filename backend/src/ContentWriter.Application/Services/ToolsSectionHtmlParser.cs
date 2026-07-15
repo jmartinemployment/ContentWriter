@@ -13,23 +13,33 @@ public static class ToolsSectionHtmlParser
 
     public static IReadOnlyList<SoftwareApplicationDescriptor> ExtractApplications(
         string bodyHtml,
+        IReadOnlyList<string> sectionOutline) =>
+        DiagnoseExtraction(bodyHtml, sectionOutline).Applications;
+
+    public static ToolExtractionResult DiagnoseExtraction(
+        string bodyHtml,
         IReadOnlyList<string> sectionOutline)
     {
-        if (string.IsNullOrWhiteSpace(bodyHtml) || sectionOutline.Count == 0)
+        if (sectionOutline.Count == 0)
         {
-            return Array.Empty<SoftwareApplicationDescriptor>();
+            return new ToolExtractionResult(ToolGenerationOutcome.NoToolsSection, []);
         }
 
         var toolsHeading = sectionOutline.FirstOrDefault(PillarSectionClassifier.IsToolsSection);
         if (string.IsNullOrWhiteSpace(toolsHeading))
         {
-            return Array.Empty<SoftwareApplicationDescriptor>();
+            return new ToolExtractionResult(ToolGenerationOutcome.NoToolsSection, []);
+        }
+
+        if (string.IsNullOrWhiteSpace(bodyHtml))
+        {
+            return new ToolExtractionResult(ToolGenerationOutcome.ToolsSectionNotFoundInBody, []);
         }
 
         var matches = HeadingPattern.Matches(bodyHtml).Cast<Match>().ToList();
         if (matches.Count == 0)
         {
-            return Array.Empty<SoftwareApplicationDescriptor>();
+            return new ToolExtractionResult(ToolGenerationOutcome.ToolsSectionNotFoundInBody, []);
         }
 
         var toolsIndex = matches.FindIndex(match =>
@@ -38,10 +48,11 @@ public static class ToolsSectionHtmlParser
 
         if (toolsIndex < 0)
         {
-            return Array.Empty<SoftwareApplicationDescriptor>();
+            return new ToolExtractionResult(ToolGenerationOutcome.ToolsSectionNotFoundInBody, []);
         }
 
         var applications = new List<SoftwareApplicationDescriptor>();
+        var seenSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var i = toolsIndex + 1; i < matches.Count; i++)
         {
             var level = int.Parse(matches[i].Groups[1].Value);
@@ -62,11 +73,59 @@ public static class ToolsSectionHtmlParser
                 continue;
             }
 
+            if (!seenSlugs.Add(SlugHelper.Slugify(name)))
+            {
+                continue;
+            }
+
             var description = ExtractFollowingParagraph(bodyHtml, matches[i].Index + matches[i].Length);
             applications.Add(new SoftwareApplicationDescriptor(name, description));
         }
 
-        return applications;
+        if (applications.Count == 0)
+        {
+            return new ToolExtractionResult(ToolGenerationOutcome.ToolsSectionEmpty, []);
+        }
+
+        return new ToolExtractionResult(ToolGenerationOutcome.Success, applications);
+    }
+
+    public static string InjectToolLinks(
+        string bodyHtml,
+        IReadOnlyList<string> sectionOutline,
+        string toolBaseUrl,
+        IReadOnlyList<(string AppName, string ToolSlug)> tools)
+    {
+        if (string.IsNullOrWhiteSpace(bodyHtml) || tools.Count == 0)
+        {
+            return bodyHtml;
+        }
+
+        var toolsHeading = sectionOutline.FirstOrDefault(PillarSectionClassifier.IsToolsSection);
+        if (string.IsNullOrWhiteSpace(toolsHeading))
+        {
+            return bodyHtml;
+        }
+
+        var result = bodyHtml;
+        foreach (var (appName, toolSlug) in tools)
+        {
+            if (string.IsNullOrWhiteSpace(appName))
+            {
+                continue;
+            }
+
+            var href = $"{toolBaseUrl.TrimEnd('/')}/{toolSlug}";
+            var pattern = $@"(<h3[^>]*>)(\s*{Regex.Escape(appName)}\s*)(</h3>)";
+            result = Regex.Replace(
+                result,
+                pattern,
+                $"$1<a href=\"{href}\">$2</a>$3",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline,
+                TimeSpan.FromSeconds(2));
+        }
+
+        return result;
     }
 
     private static string? ExtractFollowingParagraph(string html, int startIndex)

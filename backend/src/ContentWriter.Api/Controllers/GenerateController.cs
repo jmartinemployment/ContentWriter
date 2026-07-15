@@ -30,6 +30,10 @@ public class GenerateController : ControllerBase
     public Task<IActionResult> GeneratePillar(Guid projectId, CancellationToken cancellationToken) =>
         RunStep(projectId, _orchestrator.GeneratePillarAsync(projectId, cancellationToken), "pillar");
 
+    [HttpPost("tools")]
+    public Task<IActionResult> GenerateToolPages(Guid projectId, CancellationToken cancellationToken) =>
+        RunStep(projectId, _orchestrator.GenerateToolPagesAsync(projectId, cancellationToken), "tools");
+
     [HttpPost("blog")]
     public Task<IActionResult> GenerateBlog(Guid projectId, CancellationToken cancellationToken) =>
         RunStep(projectId, _orchestrator.GenerateBlogAsync(projectId, cancellationToken), "blog");

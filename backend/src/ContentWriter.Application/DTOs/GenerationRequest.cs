@@ -20,6 +20,7 @@ public record ProjectGenerationContext(
     string AuthorName,
     string ArticleBaseUrl,
     string BlogBaseUrl,
+    string ToolBaseUrl,
     string ImplementerPositioning,
     LlmProviderType Provider);
 
@@ -57,6 +58,14 @@ public record BlogDraft(
     List<string> Keywords,
     int WordCount,
     List<string> SectionOutline);
+
+public record ToolMetadataDraft(
+    string DepartmentListExcerpt,
+    string HeroExcerpt,
+    string NewspaperExcerpt,
+    string ToolPageExcerpt,
+    string Advertisement,
+    string MetaDescription);
 
 public record SocialPostDraft(string Platform, string Text);
 
