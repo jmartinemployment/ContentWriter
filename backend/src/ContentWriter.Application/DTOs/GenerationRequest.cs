@@ -114,6 +114,15 @@ public record ImagePromptSectionContent(
 
 public record ImagePromptsContent(IReadOnlyList<ImagePromptSectionContent> Sections);
 
+public record ToolPostContent(
+    string Title,
+    string Slug,
+    string ToolUrl,
+    string BodyHtml,
+    string MetaDescription,
+    string? JsonLdSchema,
+    int? SourceAppOrder);
+
 public record GeneratedContentSet(
     ArticleDraft? Article,
     string? ArticleSlug,
@@ -126,4 +135,5 @@ public record GeneratedContentSet(
     SocialPostDraft? FacebookPost,
     SocialPostDraft? LinkedInPost,
     ColdOutreachEmailContent? ColdOutreachEmail,
-    ImagePromptsContent? ImagePrompts);
+    ImagePromptsContent? ImagePrompts,
+    IReadOnlyList<ToolPostContent>? ToolPosts);

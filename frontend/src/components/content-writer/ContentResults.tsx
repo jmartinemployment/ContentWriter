@@ -8,14 +8,15 @@ import {
   generatePillarBodyContent,
   generatePillarPlanContent,
   generateSocialContent,
+  generateToolsContent,
   publishToGeekBlog,
   ApiError,
 } from "@/lib/content-writer/api";
-import type { ColdOutreachEmailDraft, GeneratedContentSet, ImagePromptSection, ImagePromptsSet, PublishResult } from "@/lib/content-writer/types";
+import type { ColdOutreachEmailDraft, GeneratedContentSet, ImagePromptSection, ImagePromptsSet, PublishResult, ToolPostDraft } from "@/lib/content-writer/types";
 import { CONTENT_LENGTH_TARGETS } from "@/lib/content-writer/types";
 
-type Tab = "article" | "blog" | "facebook" | "linkedin" | "cold-outreach" | "image-prompts";
-type GeneratingStep = "pillar-plan" | "pillar-body" | "blog" | "social" | "cold-outreach" | "image-prompts" | "all" | null;
+type Tab = "article" | "blog" | "facebook" | "linkedin" | "cold-outreach" | "tools" | "image-prompts";
+type GeneratingStep = "pillar-plan" | "pillar-body" | "blog" | "social" | "cold-outreach" | "tools" | "image-prompts" | "all" | null;
 
 const PILLAR_BODY_MIN_WORDS = 200;
 
@@ -25,6 +26,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "facebook", label: "Facebook" },
   { id: "linkedin", label: "LinkedIn" },
   { id: "cold-outreach", label: "Cold Outreach" },
+  { id: "tools", label: "Tools" },
   { id: "image-prompts", label: "Image Prompts" },
 ];
 
@@ -51,6 +53,7 @@ export default function ContentResults({
   const hasBlog = result?.blog != null;
   const hasSocial = result?.facebookPost != null && result?.linkedInPost != null;
   const hasColdOutreach = result?.coldOutreachEmail != null;
+  const hasTools = (result?.toolPosts?.length ?? 0) > 0;
   const hasImagePrompts = (result?.imagePrompts?.sections?.length ?? 0) > 0;
   const hasPublishableContent = hasPillarBody || hasBlog;
   const isGenerating = generatingStep !== null;
@@ -64,6 +67,9 @@ export default function ContentResults({
       onGenerated(next);
       if ((step === "cold-outreach" || step === "all") && next.coldOutreachEmail) {
         setActiveTab("cold-outreach");
+      }
+      if ((step === "tools" || step === "all") && (next.toolPosts?.length ?? 0) > 0) {
+        setActiveTab("tools");
       }
       if ((step === "image-prompts" || step === "all") && (next.imagePrompts?.sections?.length ?? 0) > 0) {
         setActiveTab("image-prompts");
@@ -80,7 +86,7 @@ export default function ContentResults({
     <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-foreground">4. Generate Content</h2>
       <p className="mt-1 text-sm text-muted">
-        Run each step separately. Steps 1–2 plan and write the pillar article; steps 3–6 build blog, social, email, and Leonardo image prompts from it.
+        Run each step separately. Steps 1–2 plan and write the pillar article; steps 3–7 build blog, social, email, tool documents, and Leonardo image prompts from it.
       </p>
 
       <div className="mt-5 space-y-3">
@@ -145,6 +151,18 @@ export default function ContentResults({
 
         <StepRow
           step={6}
+          title="Tool documents"
+          description="Up to 5 standalone pages, one per tool listed in the pillar's AI Tool Section, each with its own SoftwareApplication JSON+LD."
+          done={hasTools}
+          disabled={!hasPillarBody || isGenerating}
+          isRunning={generatingStep === "tools"}
+          buttonLabel={hasTools ? "Regenerate tools" : "Generate tools"}
+          onClick={() => runStep("tools", () => generateToolsContent(projectId))}
+          lockedMessage={!hasPillarBody ? "Complete Step 2 first." : undefined}
+        />
+
+        <StepRow
+          step={7}
           title="Image prompts (Leonardo)"
           description="One Leonardo.ai prompt per H2 in the pillar and blog — copy each into Leonardo for section figures."
           done={hasImagePrompts}
@@ -180,6 +198,10 @@ export default function ContentResults({
               state = await generateColdOutreachContent(projectId);
               onGenerated(state);
             }
+            if (!state.toolPosts?.length) {
+              state = await generateToolsContent(projectId);
+              onGenerated(state);
+            }
             if (!state.imagePrompts?.sections?.length) {
               state = await generateImagePromptsContent(projectId);
               onGenerated(state);
@@ -190,7 +212,7 @@ export default function ContentResults({
         disabled={
           !canGenerate ||
           isGenerating ||
-          (hasPillarBody && hasBlog && hasSocial && result?.coldOutreachEmail != null && hasImagePrompts)
+          (hasPillarBody && hasBlog && hasSocial && result?.coldOutreachEmail != null && hasTools && hasImagePrompts)
         }
         className="mt-4 text-sm font-medium text-brand hover:underline disabled:opacity-60"
       >
@@ -277,10 +299,13 @@ export default function ContentResults({
                 (tab.id === "blog" && !result.blog) ||
                 ((tab.id === "facebook" || tab.id === "linkedin") && !result.facebookPost) ||
                 (tab.id === "cold-outreach" && !result.coldOutreachEmail) ||
+                (tab.id === "tools" && (result.toolPosts?.length ?? 0) === 0) ||
                 (tab.id === "image-prompts" && (result.imagePrompts?.sections?.length ?? 0) === 0);
               const hint =
                 tab.id === "image-prompts" && (result.imagePrompts?.sections?.length ?? 0) === 0
-                  ? "Run Step 6 (Generate prompts) first"
+                  ? "Run Step 7 (Generate prompts) first"
+                  : tab.id === "tools" && (result.toolPosts?.length ?? 0) === 0
+                  ? "Run Step 6 (Generate tools) first"
                   : tab.id === "cold-outreach" && !result.coldOutreachEmail
                   ? "Run Step 5 (Generate email) first"
                   : tab.id === "blog" && !result.blog
@@ -360,11 +385,17 @@ export default function ContentResults({
               ) : (
                 <EmptyTabHint message="Run Step 5 (Generate email) to create the cold outreach email." />
               ))}
+            {activeTab === "tools" &&
+              ((result.toolPosts?.length ?? 0) > 0 ? (
+                <ToolPostsView tools={result.toolPosts!} />
+              ) : (
+                <EmptyTabHint message="Run Step 6 to generate tool documents." />
+              ))}
             {activeTab === "image-prompts" &&
               (result.imagePrompts ? (
                 <ImagePromptsView prompts={result.imagePrompts} />
               ) : (
-                <EmptyTabHint message="Run Step 6 to generate Leonardo image prompts." />
+                <EmptyTabHint message="Run Step 7 to generate Leonardo image prompts." />
               ))}
           </div>
         </div>
@@ -600,6 +631,51 @@ function formatLeonardoCopyBlock(item: ImagePromptSection): string {
 
 async function copyText(text: string): Promise<void> {
   await navigator.clipboard.writeText(text);
+}
+
+function ToolPostsView({ tools }: { tools: ToolPostDraft[] }) {
+  return (
+    <div className="space-y-4">
+      {tools.map((tool) => (
+        <ToolPostCard key={tool.slug} tool={tool} />
+      ))}
+    </div>
+  );
+}
+
+function ToolPostCard({ tool }: { tool: ToolPostDraft }) {
+  const [showSchema, setShowSchema] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <h3 className="text-lg font-semibold text-foreground">{tool.title}</h3>
+      <p className="mt-1 text-sm text-muted">{tool.metaDescription}</p>
+      <a href={tool.toolUrl} className="mt-1 inline-block text-sm text-brand hover:underline" target="_blank">
+        {tool.toolUrl}
+      </a>
+
+      <div
+        className="rendered-content mt-4 rounded-lg border border-border bg-surface p-4"
+        dangerouslySetInnerHTML={{ __html: tool.bodyHtml }}
+      />
+
+      {tool.jsonLdSchema && (
+        <>
+          <button
+            onClick={() => setShowSchema((v) => !v)}
+            className="mt-4 text-sm font-medium text-brand hover:underline"
+          >
+            {showSchema ? "Hide" : "Show"} JSON+LD Schema
+          </button>
+          {showSchema && (
+            <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-slate-900 p-4 text-xs text-slate-100">
+              {tool.jsonLdSchema}
+            </pre>
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 function ImagePromptsView({ prompts }: { prompts: ImagePromptsSet }) {

@@ -74,7 +74,8 @@ public class GeekBlogPublishService : IGeekBlogPublishService
         var contentSet = GeneratedContentSetAssembler.Assemble(
             project,
             _companyProfile.ArticleBaseUrl,
-            _companyProfile.BlogBaseUrl);
+            _companyProfile.BlogBaseUrl,
+            _companyProfile.ToolBaseUrl);
 
         var categorySlug = DepartmentNameResolver.Resolve(
             contentSet.ArticleUrl,

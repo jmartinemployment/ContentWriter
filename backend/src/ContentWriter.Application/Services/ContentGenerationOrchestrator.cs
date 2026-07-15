@@ -526,7 +526,8 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
     }
 
     private GeneratedContentSet Assemble(Project project) =>
-        GeneratedContentSetAssembler.Assemble(project, _companyProfile.ArticleBaseUrl, _companyProfile.BlogBaseUrl);
+        GeneratedContentSetAssembler.Assemble(
+            project, _companyProfile.ArticleBaseUrl, _companyProfile.BlogBaseUrl, _companyProfile.ToolBaseUrl);
 
     private ProjectGenerationContext BuildContext(Project project)
     {

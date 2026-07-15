@@ -150,6 +150,12 @@ export function generateImagePromptsContent(projectId: string): Promise<Generate
   });
 }
 
+export function generateToolsContent(projectId: string): Promise<GeneratedContentSet> {
+  return request<GeneratedContentSet>(`/api/projects/${projectId}/generate/tools`, {
+    method: "POST",
+  });
+}
+
 export function publishToGeekBlog(
   projectId: string,
   department?: string

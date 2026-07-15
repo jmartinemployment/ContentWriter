@@ -9,7 +9,8 @@ public static class GeneratedContentSetAssembler
     public static GeneratedContentSet Assemble(
         Project project,
         string articleBaseUrl,
-        string blogBaseUrl)
+        string blogBaseUrl,
+        string toolBaseUrl)
     {
         var articleRow = Find(project, GeneratedContentType.TechnicalArticle);
         var blogRow = Find(project, GeneratedContentType.BlogPost);
@@ -40,7 +41,26 @@ public static class GeneratedContentSetAssembler
                     coldOutreachRow.BodyHtml,
                     coldOutreachRow.MetaDescription ?? string.Empty,
                     coldOutreachRow.RelatedArticleUrl ?? articleUrl ?? string.Empty),
-            ImagePrompts: BuildImagePrompts(project));
+            ImagePrompts: BuildImagePrompts(project),
+            ToolPosts: BuildToolPosts(project, toolBaseUrl));
+    }
+
+    private static IReadOnlyList<ToolPostContent>? BuildToolPosts(Project project, string toolBaseUrl)
+    {
+        var toolRows = project.GeneratedContents
+            .Where(c => c.ContentType == GeneratedContentType.ToolPost)
+            .OrderBy(c => c.SourceAppOrder)
+            .Select(c => new ToolPostContent(
+                c.Title,
+                c.Slug,
+                CombineUrl(toolBaseUrl, c.Slug),
+                c.BodyHtml,
+                c.MetaDescription ?? string.Empty,
+                c.JsonLdSchema,
+                c.SourceAppOrder))
+            .ToList();
+
+        return toolRows.Count == 0 ? null : toolRows;
     }
 
     private static ImagePromptsContent? BuildImagePrompts(Project project)

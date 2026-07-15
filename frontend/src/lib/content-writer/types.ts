@@ -29,7 +29,8 @@ export type GeneratedContentType =
   | "ImagePromptPillarFigure"
   | "ImagePromptSocialFacebook"
   | "ImagePromptSocialLinkedIn"
-  | "ImagePromptSection";
+  | "ImagePromptSection"
+  | "ToolPost";
 
 export interface ProjectSummary {
   id: string;
@@ -177,6 +178,16 @@ export interface ImagePromptsSet {
   sections: ImagePromptSection[];
 }
 
+export interface ToolPostDraft {
+  title: string;
+  slug: string;
+  toolUrl: string;
+  bodyHtml: string;
+  metaDescription: string;
+  jsonLdSchema: string | null;
+  sourceAppOrder: number | null;
+}
+
 export interface PublishedPost {
   contentType: string;
   postId: number;
@@ -204,6 +215,7 @@ export interface GeneratedContentSet {
   linkedInPost: SocialPostDraft | null;
   coldOutreachEmail: ColdOutreachEmailDraft | null;
   imagePrompts: ImagePromptsSet | null;
+  toolPosts: ToolPostDraft[] | null;
 }
 
 export interface LmStudioHealthStatus {
