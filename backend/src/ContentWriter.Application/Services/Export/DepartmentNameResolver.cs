@@ -8,7 +8,7 @@ public static partial class DepartmentNameResolver
     public static string Resolve(string? departmentOverride)
     {
         if (!string.IsNullOrWhiteSpace(departmentOverride))
-            return SanitizeDirectorySegment(departmentOverride);
+            return departmentOverride.Trim();
 
         throw new ContentGenerationException(
             "A department must be provided explicitly to /publish — no fallback resolution is performed.");

@@ -6,10 +6,19 @@ namespace ContentWriter.Application.Tests;
 public class DepartmentNameResolverTests
 {
     [Fact]
-    public void Resolve_sanitizes_explicit_override()
+    public void Resolve_returns_explicit_override_unmodified()
     {
-        var result = DepartmentNameResolver.Resolve("Human Resources");
-        Assert.Equal("human-resources", result);
+        // Categories are an exact-match lookup against a live table (e.g. "Customer Service"),
+        // so the override must pass through untouched — not lowercased/hyphenated.
+        var result = DepartmentNameResolver.Resolve("Customer Service");
+        Assert.Equal("Customer Service", result);
+    }
+
+    [Fact]
+    public void Resolve_trims_whitespace()
+    {
+        var result = DepartmentNameResolver.Resolve("  Sales  ");
+        Assert.Equal("Sales", result);
     }
 
     [Fact]
