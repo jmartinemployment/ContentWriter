@@ -50,9 +50,12 @@ public class ProjectsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = project.Id }, ToSummary(project));
     }
 
+    private static readonly TimeSpan StaleProjectMaxAge = TimeSpan.FromHours(24);
+
     [HttpGet]
     public async Task<ActionResult<List<ProjectSummaryResponse>>> GetRecent(CancellationToken cancellationToken)
     {
+        await _projectRepository.PurgeStaleAsync(StaleProjectMaxAge, cancellationToken);
         var projects = await _projectRepository.GetRecentAsync(cancellationToken: cancellationToken);
         return Ok(projects.Select(ToSummary).ToList());
     }

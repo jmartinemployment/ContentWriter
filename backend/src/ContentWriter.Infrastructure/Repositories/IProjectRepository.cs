@@ -9,6 +9,9 @@ public interface IProjectRepository : IRepository<Project>
 
     Task<List<Project>> GetRecentAsync(int take = 25, CancellationToken cancellationToken = default);
 
+    /// <summary>Deletes projects older than <paramref name="maxAge"/> that never reached Completed status.</summary>
+    Task<int> PurgeStaleAsync(TimeSpan maxAge, CancellationToken cancellationToken = default);
+
     Task AddKeywordSourceAsync(KeywordSource keywordSource, CancellationToken cancellationToken = default);
 
     Task SetCrawledSiteAsync(CrawledSite crawledSite, CancellationToken cancellationToken = default);

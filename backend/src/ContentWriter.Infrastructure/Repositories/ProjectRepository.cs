@@ -1,4 +1,5 @@
 using ContentWriter.Domain.Entities;
+using ContentWriter.Domain.Enums;
 using ContentWriter.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,23 @@ public class ProjectRepository : Repository<Project>, IProjectRepository
             .OrderByDescending(p => p.CreatedAtUtc)
             .Take(take)
             .ToListAsync(cancellationToken);
+
+    public async Task<int> PurgeStaleAsync(TimeSpan maxAge, CancellationToken cancellationToken = default)
+    {
+        var cutoff = DateTime.UtcNow - maxAge;
+        var stale = await DbSet
+            .Where(p => p.Status != ProjectStatus.Completed && p.CreatedAtUtc < cutoff)
+            .ToListAsync(cancellationToken);
+
+        if (stale.Count == 0)
+        {
+            return 0;
+        }
+
+        DbSet.RemoveRange(stale);
+        await Context.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
 
     public async Task AddKeywordSourceAsync(KeywordSource keywordSource, CancellationToken cancellationToken = default)
         => await Context.KeywordSources.AddAsync(keywordSource, cancellationToken);
