@@ -127,6 +127,13 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
         articleRow.GeneratedByProvider = provider.ProviderType;
         articleRow.GeneratedByModel = ResolveModelName(project.PreferredProvider);
 
+        var summaryVariants = await GenerateSummaryVariantsAsync(
+            provider, context, metadata.Title, bodyHtml, metadata.MetaDescription, "pillar", cancellationToken);
+        articleRow.MainSummary = summaryVariants.MainSummary;
+        articleRow.HeroSummary = summaryVariants.HeroSummary;
+        articleRow.BlogSummary = summaryVariants.BlogSummary;
+        articleRow.AdvertisingSummary = summaryVariants.AdvertisingSummary;
+
         await SaveProjectAsync(project, ProjectStatus.ReadyForGeneration, cancellationToken);
         return Assemble(project);
     }
@@ -207,6 +214,9 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
         articleRow.JsonLdSchema = _articleSchemaBuilder.Build(articleMetadata, blogUrl, softwareApplications);
         articleRow.RelatedArticleUrl = blogUrl;
 
+        var summaryVariants = await GenerateSummaryVariantsAsync(
+            provider, context, blog.Title, blog.BodyHtml, blog.MetaDescription, "blog", cancellationToken);
+
         await AddContentAsync(project, provider.ProviderType, new GeneratedContent
         {
             ProjectId = project.Id,
@@ -220,6 +230,10 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
             BodyHtml = blog.BodyHtml,
             JsonLdSchema = blogJsonLd,
             RelatedArticleUrl = articleUrl,
+            MainSummary = summaryVariants.MainSummary,
+            HeroSummary = summaryVariants.HeroSummary,
+            BlogSummary = summaryVariants.BlogSummary,
+            AdvertisingSummary = summaryVariants.AdvertisingSummary,
             GeneratedByProvider = provider.ProviderType,
             GeneratedByModel = ResolveModelName(project.PreferredProvider)
         }, cancellationToken);
@@ -888,6 +902,36 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
         }
 
         throw new ContentGenerationException($"Model did not return valid JSON for {platform} post after {maxAttempts} attempts.");
+    }
+
+    private async Task<SummaryVariantsDraft> GenerateSummaryVariantsAsync(
+        IContentGenerationProvider provider,
+        ProjectGenerationContext context,
+        string title,
+        string bodyHtml,
+        string? metaDescription,
+        string contentTypeLabel,
+        CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 2;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            var result = await provider.CompleteAsync(
+                _promptBuilder.BuildSummaryVariantsPrompt(context, title, bodyHtml, metaDescription, contentTypeLabel),
+                cancellationToken);
+
+            try
+            {
+                return LlmResponseJsonParser.Parse<SummaryVariantsDraft>(result.Content, "summary variants");
+            }
+            catch (ContentGenerationException ex) when (attempt < maxAttempts)
+            {
+                _logger.LogWarning(ex, "Retrying summary variants generation after invalid JSON (attempt {Attempt})", attempt);
+            }
+        }
+
+        throw new ContentGenerationException($"Model did not return valid JSON for summary variants after {maxAttempts} attempts.");
     }
 
     private T ParseJson<T>(string rawContent, string label)

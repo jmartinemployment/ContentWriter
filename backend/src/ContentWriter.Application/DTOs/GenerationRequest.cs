@@ -61,11 +61,18 @@ public record BlogDraft(
 
 public record ToolMetadataDraft(
     string DepartmentListExcerpt,
-    string HeroExcerpt,
-    string NewspaperExcerpt,
+    string MainSummary,
+    string HeroSummary,
+    string BlogSummary,
     string ToolPageExcerpt,
-    string Advertisement,
+    string AdvertisingSummary,
     string MetaDescription);
+
+public record SummaryVariantsDraft(
+    string MainSummary,
+    string HeroSummary,
+    string BlogSummary,
+    string AdvertisingSummary);
 
 public record SocialPostDraft(string Platform, string Text);
 

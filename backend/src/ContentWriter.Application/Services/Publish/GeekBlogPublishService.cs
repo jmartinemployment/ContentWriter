@@ -82,6 +82,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
         var publishedAt = DateTimeOffset.UtcNow;
         var published = new List<GeekBlogPublishedPost>();
 
+        var articleRow = project.GeneratedContents.FirstOrDefault(c => c.ContentType == GeneratedContentType.TechnicalArticle);
         if (contentSet.Article is not null
             && contentSet.Article.WordCount >= PillarBodyMinWords
             && !string.IsNullOrWhiteSpace(contentSet.ArticleSlug))
@@ -98,9 +99,14 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,
+                mainSummary: articleRow?.MainSummary ?? string.Empty,
+                heroSummary: articleRow?.HeroSummary ?? string.Empty,
+                blogSummary: articleRow?.BlogSummary ?? string.Empty,
+                advertisingSummary: articleRow?.AdvertisingSummary ?? string.Empty,
                 cancellationToken: cancellationToken));
         }
 
+        var blogRow = project.GeneratedContents.FirstOrDefault(c => c.ContentType == GeneratedContentType.BlogPost);
         if (contentSet.Blog is not null
             && contentSet.Blog.WordCount > 0
             && !string.IsNullOrWhiteSpace(contentSet.BlogSlug))
@@ -117,6 +123,10 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,
+                mainSummary: blogRow?.MainSummary ?? string.Empty,
+                heroSummary: blogRow?.HeroSummary ?? string.Empty,
+                blogSummary: blogRow?.BlogSummary ?? string.Empty,
+                advertisingSummary: blogRow?.AdvertisingSummary ?? string.Empty,
                 cancellationToken: cancellationToken));
         }
 
@@ -141,6 +151,10 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,
+                mainSummary: toolRow.MainSummary,
+                heroSummary: toolRow.HeroSummary,
+                blogSummary: toolRow.BlogSummary,
+                advertisingSummary: toolRow.AdvertisingSummary,
                 cancellationToken: cancellationToken));
         }
 
@@ -165,15 +179,18 @@ public class GeekBlogPublishService : IGeekBlogPublishService
         string categorySlug,
         string cwJobId,
         DateTimeOffset publishedAt,
+        string mainSummary,
+        string heroSummary,
+        string blogSummary,
+        string advertisingSummary,
         CancellationToken cancellationToken)
     {
         var sections = ArticleHtmlSectionExtractor.Split(bodyHtml)
             .Select(s => new GeekBlogSectionPayload(s.SortOrder, s.HeadingTag, s.HeadingText, s.BodyContent, s.MediaUrl, s.MediaAlt))
             .ToList();
 
-        var summary = !string.IsNullOrWhiteSpace(metaDescription)
-            ? metaDescription
-            : DeriveSummaryFromBody(bodyHtml);
+        // Always body-derived, never copied from MetaDescription — the two must stay distinct.
+        var summary = DeriveSummaryFromBody(bodyHtml);
 
         var payload = new GeekBlogPostPayload(
             PostType: postType,
@@ -184,6 +201,10 @@ public class GeekBlogPublishService : IGeekBlogPublishService
             Title: title,
             Summary: summary,
             MetaDescription: string.IsNullOrWhiteSpace(metaDescription) ? null : metaDescription,
+            MainSummary: mainSummary,
+            HeroSummary: heroSummary,
+            BlogSummary: blogSummary,
+            AdvertisingSummary: advertisingSummary,
             JsonLdOverride: jsonLdOverride,
             Sections: sections,
             TagSlugs: [categorySlug],

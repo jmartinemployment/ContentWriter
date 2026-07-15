@@ -17,11 +17,14 @@ public class GeneratedContent
     public string Slug { get; set; } = string.Empty;
     public string BodyHtml { get; set; } = string.Empty;
 
-    /// <summary>Blurb under the page H1 (pillar, tool, blog).</summary>
-    public string HeroExcerpt { get; set; } = string.Empty;
+    /// <summary>Main-page summary (pillar, tool, blog).</summary>
+    public string MainSummary { get; set; } = string.Empty;
 
-    /// <summary>Newspaper blog wire column copy (pillar, tool, blog).</summary>
-    public string NewspaperExcerpt { get; set; } = string.Empty;
+    /// <summary>Blurb under the page H1 (pillar, tool, blog).</summary>
+    public string HeroSummary { get; set; } = string.Empty;
+
+    /// <summary>Blog-listing teaser copy (pillar, tool, blog).</summary>
+    public string BlogSummary { get; set; } = string.Empty;
 
     /// <summary>Department hub listing copy (/use-cases/{dept}, /tools/{dept}, /blog/{dept}).</summary>
     public string DepartmentListExcerpt { get; set; } = string.Empty;
@@ -29,8 +32,8 @@ public class GeneratedContent
     /// <summary>Tool page content slot (tool rows only).</summary>
     public string ToolPageExcerpt { get; set; } = string.Empty;
 
-    /// <summary>Sponsored ad copy — not an excerpt (tool, blog).</summary>
-    public string? Advertisement { get; set; }
+    /// <summary>Sponsored ad copy — not an excerpt (pillar, tool, blog).</summary>
+    public string AdvertisingSummary { get; set; } = string.Empty;
 
     /// <summary>Top Tools app name this tool row was generated from (tool posts only).</summary>
     public string? SourceAppName { get; set; }

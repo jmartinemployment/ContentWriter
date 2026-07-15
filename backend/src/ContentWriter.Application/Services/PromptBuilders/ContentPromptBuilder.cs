@@ -66,6 +66,13 @@ public interface IContentPromptBuilder
         SchemaBuilders.SoftwareApplicationDescriptor app,
         string bodyHtml);
 
+    ChatCompletionRequest BuildSummaryVariantsPrompt(
+        ProjectGenerationContext context,
+        string title,
+        string bodyHtml,
+        string? metaDescription,
+        string contentTypeLabel);
+
     ChatCompletionRequest BuildToolWordCountExpansionPrompt(
         ProjectGenerationContext context,
         SchemaBuilders.SoftwareApplicationDescriptor app,
@@ -534,7 +541,7 @@ public class ContentPromptBuilder : IContentPromptBuilder
     }
 
     private const string ToolMetadataJsonContract =
-        "{\"departmentListExcerpt\": string (1-2 sentences for tools hub cards), \"heroExcerpt\": string (1-2 sentences, blurb under tool page H1), \"newspaperExcerpt\": string (1-2 sentences for newspaper sponsored wire), \"toolPageExcerpt\": string (1-2 sentences for newspaper tool content column), \"advertisement\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt), \"metaDescription\": string (max 160 chars, SEO only, distinct from the other five)}";
+        "{\"departmentListExcerpt\": string (1-2 sentences for tools hub cards), \"mainSummary\": string (1-2 sentences, main-page summary), \"heroSummary\": string (1-2 sentences, blurb under tool page H1), \"blogSummary\": string (1-2 sentences, blog-listing teaser), \"toolPageExcerpt\": string (1-2 sentences for newspaper tool content column), \"advertisingSummary\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt), \"metaDescription\": string (max 160 chars, SEO only, distinct from the other six)}";
 
     public ChatCompletionRequest BuildToolBodyPrompt(
         ProjectGenerationContext context,
@@ -578,7 +585,7 @@ public class ContentPromptBuilder : IContentPromptBuilder
             .AppendLine("You write presentation metadata for a B2B tool overview page (schema.org SoftwareApplication).")
             .AppendLine("Respond with ONLY a single valid JSON object — no markdown fences:")
             .AppendLine(ToolMetadataJsonContract)
-            .AppendLine("departmentListExcerpt, heroExcerpt, newspaperExcerpt, toolPageExcerpt, advertisement, and metaDescription must each use different wording.")
+            .AppendLine("departmentListExcerpt, mainSummary, heroSummary, blogSummary, toolPageExcerpt, advertisingSummary, and metaDescription must each use different wording.")
             .ToString();
 
         var user = new StringBuilder()
@@ -587,6 +594,38 @@ public class ContentPromptBuilder : IContentPromptBuilder
             .AppendLine($"Tool name: {app.Name}")
             .AppendLine()
             .AppendLine("Tool page body (for context):")
+            .AppendLine(StripHtmlExcerpt(bodyHtml, 2000))
+            .ToString();
+
+        return new ChatCompletionRequest(
+            Messages: [new(ChatRole.System, system), new(ChatRole.User, user.ToString())],
+            Temperature: 0.55,
+            MaxOutputTokens: 1024);
+    }
+
+    private const string SummaryVariantsJsonContract =
+        "{\"mainSummary\": string (1-2 sentences, main-page summary), \"heroSummary\": string (1-2 sentences, blurb under the page H1), \"blogSummary\": string (1-2 sentences, blog-listing teaser), \"advertisingSummary\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt)}";
+
+    public ChatCompletionRequest BuildSummaryVariantsPrompt(
+        ProjectGenerationContext context,
+        string title,
+        string bodyHtml,
+        string? metaDescription,
+        string contentTypeLabel)
+    {
+        var system = new StringBuilder()
+            .AppendLine($"You write presentation summary copy for a {contentTypeLabel} page.")
+            .AppendLine("Respond with ONLY a single valid JSON object — no markdown fences:")
+            .AppendLine(SummaryVariantsJsonContract)
+            .AppendLine("mainSummary, heroSummary, blogSummary, and advertisingSummary must each use different wording from each other and from the meta description provided below.")
+            .ToString();
+
+        var user = new StringBuilder()
+            .AppendLine($"Target keyword: {context.TargetKeyword}")
+            .AppendLine($"Title: {title}")
+            .AppendLine($"Meta description (do not repeat this wording): {metaDescription ?? "N/A"}")
+            .AppendLine()
+            .AppendLine("Page body (for context):")
             .AppendLine(StripHtmlExcerpt(bodyHtml, 2000))
             .ToString();
 

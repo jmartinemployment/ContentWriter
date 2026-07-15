@@ -119,11 +119,12 @@ public sealed class ToolPageGenerator : IToolPageGenerator
             Title = displayTitle,
             DisplayTitle = displayTitle,
             Slug = slug,
-            HeroExcerpt = toolMetadata.HeroExcerpt,
-            NewspaperExcerpt = toolMetadata.NewspaperExcerpt,
+            MainSummary = toolMetadata.MainSummary,
+            HeroSummary = toolMetadata.HeroSummary,
+            BlogSummary = toolMetadata.BlogSummary,
             DepartmentListExcerpt = toolMetadata.DepartmentListExcerpt,
             ToolPageExcerpt = toolMetadata.ToolPageExcerpt,
-            Advertisement = toolMetadata.Advertisement,
+            AdvertisingSummary = toolMetadata.AdvertisingSummary,
             MetaDescription = toolMetadata.MetaDescription.Length > 160
                 ? toolMetadata.MetaDescription[..160]
                 : toolMetadata.MetaDescription,
