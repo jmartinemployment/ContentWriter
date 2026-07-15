@@ -178,6 +178,12 @@ export interface ImagePromptsSet {
   sections: ImagePromptSection[];
 }
 
+export interface CategoryOption {
+  id: number;
+  slug: string;
+  name: string | null;
+}
+
 export interface ToolPostDraft {
   title: string;
   slug: string;

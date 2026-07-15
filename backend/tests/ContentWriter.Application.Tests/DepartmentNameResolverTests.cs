@@ -1,36 +1,21 @@
+using ContentWriter.Application.Providers;
 using ContentWriter.Application.Services.Export;
 
 namespace ContentWriter.Application.Tests;
 
 public class DepartmentNameResolverTests
 {
-    [Theory]
-    [InlineData("https://www.geekatyourspot.com/use-cases/accounting/smart-bank-reconciliation", "accounting")]
-    [InlineData("https://www.geekatyourspot.com/use-cases/marketing", "marketing")]
-    public void Resolve_extracts_department_from_use_cases_url(string url, string expected)
-    {
-        var result = DepartmentNameResolver.Resolve(url, null, null, null, null);
-        Assert.Equal(expected, result);
-    }
-
     [Fact]
-    public void Resolve_prefers_explicit_override()
+    public void Resolve_sanitizes_explicit_override()
     {
-        var result = DepartmentNameResolver.Resolve(
-            "https://www.geekatyourspot.com/use-cases/accounting/foo",
-            null,
-            null,
-            "Sales Project",
-            "human-resources");
-
+        var result = DepartmentNameResolver.Resolve("Human Resources");
         Assert.Equal("human-resources", result);
     }
 
     [Fact]
-    public void Resolve_uses_project_name_prefix_when_no_url_match()
+    public void Resolve_throws_when_no_override_provided()
     {
-        var result = DepartmentNameResolver.Resolve(null, null, null, "Accounting - Smart Bank Recon", null);
-        Assert.Equal("accounting", result);
+        Assert.Throws<ContentGenerationException>(() => DepartmentNameResolver.Resolve(null));
     }
 
     [Theory]

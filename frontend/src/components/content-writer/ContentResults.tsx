@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   generateBlogContent,
   generateColdOutreachContent,
@@ -9,10 +9,11 @@ import {
   generatePillarPlanContent,
   generateSocialContent,
   generateToolsContent,
+  getGeekBackendCategories,
   publishToGeekBlog,
   ApiError,
 } from "@/lib/content-writer/api";
-import type { ColdOutreachEmailDraft, GeneratedContentSet, ImagePromptSection, ImagePromptsSet, PublishResult, ToolPostDraft } from "@/lib/content-writer/types";
+import type { CategoryOption, ColdOutreachEmailDraft, GeneratedContentSet, ImagePromptSection, ImagePromptsSet, PublishResult, ToolPostDraft } from "@/lib/content-writer/types";
 import { CONTENT_LENGTH_TARGETS } from "@/lib/content-writer/types";
 
 type Tab = "article" | "blog" | "facebook" | "linkedin" | "cold-outreach" | "tools" | "image-prompts";
@@ -47,6 +48,22 @@ export default function ContentResults({
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishDepartment, setPublishDepartment] = useState("");
+  const [categories, setCategories] = useState<CategoryOption[] | null>(null);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getGeekBackendCategories()
+      .then((options) => {
+        if (!cancelled) setCategories(options);
+      })
+      .catch(() => {
+        if (!cancelled) setCategoriesError("Could not load categories — publish is unavailable.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const hasPillarPlan = result?.article != null;
   const hasPillarBody = (result?.article?.wordCount ?? 0) >= PILLAR_BODY_MIN_WORDS;
@@ -238,27 +255,35 @@ export default function ContentResults({
                 (categories, sections, JSON-LD) — no markdown or local files involved.
               </p>
               <label className="mt-2 flex flex-col gap-1 text-xs text-muted">
-                Category slug (optional override)
-                <input
-                  value={publishDepartment}
-                  onChange={(e) => setPublishDepartment(e.target.value)}
-                  placeholder="accounting"
-                  className="max-w-xs rounded-md border border-border bg-white px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
-                />
+                Category
+                {categoriesError ? (
+                  <span className="text-red-600">{categoriesError}</span>
+                ) : (
+                  <select
+                    value={publishDepartment}
+                    onChange={(e) => setPublishDepartment(e.target.value)}
+                    disabled={categories === null}
+                    className="max-w-xs rounded-md border border-border bg-white px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+                  >
+                    <option value="">{categories === null ? "Loading categories..." : "Select a category"}</option>
+                    {categories?.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.name ?? c.slug}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </label>
             </div>
             <button
               type="button"
-              disabled={isPublishing || isGenerating}
+              disabled={isPublishing || isGenerating || !publishDepartment || categoriesError != null}
               onClick={async () => {
                 setError(null);
                 setPublishResult(null);
                 setIsPublishing(true);
                 try {
-                  const result = await publishToGeekBlog(
-                    projectId,
-                    publishDepartment.trim() || undefined
-                  );
+                  const result = await publishToGeekBlog(projectId, publishDepartment);
                   setPublishResult(result);
                 } catch (err) {
                   const message = err instanceof ApiError ? err.message : "Publish failed.";
