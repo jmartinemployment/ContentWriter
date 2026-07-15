@@ -53,64 +53,18 @@ public sealed class ToolPageGenerator : IToolPageGenerator
         }
 
         var applications = extraction.Applications.Take(MaxTools).ToList();
-        var rows = new List<GeneratedContent>();
         var usedSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var order = 1;
+        var slotted = applications
+            .Select((app, index) => (
+                App: app,
+                Slug: SlugHelper.EnsureUniqueSlug(SlugHelper.Slugify(app.Name), usedSlugs),
+                Order: index + 1))
+            .ToList();
 
-        foreach (var app in applications)
-        {
-            var slug = SlugHelper.EnsureUniqueSlug(SlugHelper.Slugify(app.Name), usedSlugs);
-            var toolUrl = $"{context.ToolBaseUrl.TrimEnd('/')}/{slug}";
-
-            var bodyHtml = await GenerateToolBodyWithValidationAsync(
-                provider, context, metadata, app, slug, cancellationToken);
-
-            var toolMetadata = await GenerateToolMetadataAsync(
-                provider, context, metadata, app, bodyHtml, cancellationToken);
-
-            var wordCount = HtmlWordCounter.Count(bodyHtml);
-            var displayTitle = app.Name.Trim();
-            var now = DateTime.UtcNow;
-            var schemaMeta = new ContentMetadata(
-                displayTitle,
-                toolMetadata.MetaDescription,
-                context.AuthorName,
-                context.PublisherName,
-                context.PublisherLogoUrl,
-                toolUrl,
-                context.PublisherLogoUrl,
-                now,
-                now,
-                metadata.Keywords,
-                wordCount);
-
-            var jsonLd = _softwareApplicationSchemaBuilder.BuildToolPage(schemaMeta, pillarArticleUrl, app);
-
-            rows.Add(new GeneratedContent
-            {
-                ProjectId = project.Id,
-                ContentType = GeneratedContentType.ToolPost,
-                Title = displayTitle,
-                DisplayTitle = displayTitle,
-                Slug = slug,
-                HeroExcerpt = toolMetadata.HeroExcerpt,
-                NewspaperExcerpt = toolMetadata.NewspaperExcerpt,
-                DepartmentListExcerpt = toolMetadata.DepartmentListExcerpt,
-                ToolPageExcerpt = toolMetadata.ToolPageExcerpt,
-                Advertisement = toolMetadata.Advertisement,
-                MetaDescription = toolMetadata.MetaDescription.Length > 160
-                    ? toolMetadata.MetaDescription[..160]
-                    : toolMetadata.MetaDescription,
-                BodyHtml = bodyHtml,
-                JsonLdSchema = string.IsNullOrWhiteSpace(jsonLd) ? "{}" : jsonLd,
-                RelatedArticleUrl = pillarArticleUrl,
-                SourceAppName = app.Name,
-                SourceAppOrder = order++,
-                WordCount = wordCount,
-                GeneratedByProvider = provider.ProviderType,
-                GeneratedByModel = provider.ProviderType.ToString(),
-            });
-        }
+        var rows = (await Task.WhenAll(slotted.Select(slot => GenerateOneToolAsync(
+                project, metadata, context, provider, pillarArticleUrl,
+                slot.App, slot.Slug, slot.Order, cancellationToken))))
+            .ToList();
 
         articleRow.BodyHtml = ToolsSectionHtmlParser.InjectToolLinks(
             articleRow.BodyHtml,
@@ -119,6 +73,69 @@ public sealed class ToolPageGenerator : IToolPageGenerator
             rows.Select(r => (r.SourceAppName!, r.Slug)).ToList());
 
         return new ToolGenerationResult(ToolGenerationOutcome.Success, rows);
+    }
+
+    private async Task<GeneratedContent> GenerateOneToolAsync(
+        Project project,
+        ArticleMetadataDraft metadata,
+        ProjectGenerationContext context,
+        IContentGenerationProvider provider,
+        string pillarArticleUrl,
+        SoftwareApplicationDescriptor app,
+        string slug,
+        int order,
+        CancellationToken cancellationToken)
+    {
+        var toolUrl = $"{context.ToolBaseUrl.TrimEnd('/')}/{slug}";
+
+        var bodyHtml = await GenerateToolBodyWithValidationAsync(
+            provider, context, metadata, app, slug, cancellationToken);
+
+        var toolMetadata = await GenerateToolMetadataAsync(
+            provider, context, metadata, app, bodyHtml, cancellationToken);
+
+        var wordCount = HtmlWordCounter.Count(bodyHtml);
+        var displayTitle = app.Name.Trim();
+        var now = DateTime.UtcNow;
+        var schemaMeta = new ContentMetadata(
+            displayTitle,
+            toolMetadata.MetaDescription,
+            context.AuthorName,
+            context.PublisherName,
+            context.PublisherLogoUrl,
+            toolUrl,
+            context.PublisherLogoUrl,
+            now,
+            now,
+            metadata.Keywords,
+            wordCount);
+
+        var jsonLd = _softwareApplicationSchemaBuilder.BuildToolPage(schemaMeta, pillarArticleUrl, app);
+
+        return new GeneratedContent
+        {
+            ProjectId = project.Id,
+            ContentType = GeneratedContentType.ToolPost,
+            Title = displayTitle,
+            DisplayTitle = displayTitle,
+            Slug = slug,
+            HeroExcerpt = toolMetadata.HeroExcerpt,
+            NewspaperExcerpt = toolMetadata.NewspaperExcerpt,
+            DepartmentListExcerpt = toolMetadata.DepartmentListExcerpt,
+            ToolPageExcerpt = toolMetadata.ToolPageExcerpt,
+            Advertisement = toolMetadata.Advertisement,
+            MetaDescription = toolMetadata.MetaDescription.Length > 160
+                ? toolMetadata.MetaDescription[..160]
+                : toolMetadata.MetaDescription,
+            BodyHtml = bodyHtml,
+            JsonLdSchema = string.IsNullOrWhiteSpace(jsonLd) ? "{}" : jsonLd,
+            RelatedArticleUrl = pillarArticleUrl,
+            SourceAppName = app.Name,
+            SourceAppOrder = order,
+            WordCount = wordCount,
+            GeneratedByProvider = provider.ProviderType,
+            GeneratedByModel = provider.ProviderType.ToString(),
+        };
     }
 
     private async Task<ToolMetadataDraft> GenerateToolMetadataAsync(
