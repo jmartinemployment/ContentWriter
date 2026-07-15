@@ -10,16 +10,11 @@ namespace ContentWriter.Api.Controllers;
 public class GenerateController : ControllerBase
 {
     private readonly IContentGenerationOrchestrator _orchestrator;
-    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<GenerateController> _logger;
 
-    public GenerateController(
-        IContentGenerationOrchestrator orchestrator,
-        IServiceScopeFactory scopeFactory,
-        ILogger<GenerateController> logger)
+    public GenerateController(IContentGenerationOrchestrator orchestrator, ILogger<GenerateController> logger)
     {
         _orchestrator = orchestrator;
-        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -35,31 +30,9 @@ public class GenerateController : ControllerBase
     public Task<IActionResult> GeneratePillar(Guid projectId, CancellationToken cancellationToken) =>
         RunStep(projectId, _orchestrator.GeneratePillarAsync(projectId, cancellationToken), "pillar");
 
-    /// <summary>
-    /// Tool page generation (up to 5 pages × 1,500-2,500 words) far exceeds the edge proxy's
-    /// request timeout, so it runs detached from the request lifetime. Poll the project detail
-    /// endpoint for the resulting ToolPost rows.
-    /// </summary>
     [HttpPost("tools")]
-    public IActionResult GenerateToolPages(Guid projectId)
-    {
-        _ = Task.Run(async () =>
-        {
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var orchestrator = scope.ServiceProvider.GetRequiredService<IContentGenerationOrchestrator>();
-            try
-            {
-                await orchestrator.GenerateToolPagesAsync(projectId, CancellationToken.None);
-                _logger.LogInformation("Background tool page generation completed for project {ProjectId}", projectId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Background tool page generation failed for project {ProjectId}", projectId);
-            }
-        });
-
-        return Accepted(new { projectId, step = "tools", status = "started" });
-    }
+    public Task<IActionResult> GenerateToolPages(Guid projectId, CancellationToken cancellationToken) =>
+        RunStep(projectId, _orchestrator.GenerateToolPagesAsync(projectId, cancellationToken), "tools");
 
     [HttpPost("blog")]
     public Task<IActionResult> GenerateBlog(Guid projectId, CancellationToken cancellationToken) =>
