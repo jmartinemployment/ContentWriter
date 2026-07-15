@@ -28,6 +28,14 @@ public class ProjectsController : ControllerBase
             return BadRequest("ProjectUrl must be a valid absolute URL.");
         }
 
+        var existing = (await _projectRepository.ListAsync(
+            p => p.TargetKeyword == request.TargetKeyword && p.ProjectUrl == request.ProjectUrl,
+            cancellationToken)).FirstOrDefault();
+        if (existing is not null)
+        {
+            return Ok(ToSummary(existing));
+        }
+
         var project = new Project
         {
             Name = request.Name,
