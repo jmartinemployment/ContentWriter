@@ -8,67 +8,23 @@ namespace ContentWriter.Infrastructure.Migrations
     public partial class AddToolPostFields : Migration
     {
         /// <inheritdoc />
+        /// <remarks>
+        /// Uses raw ADD COLUMN IF NOT EXISTS because the deployed content_writer schema was
+        /// originally created by the retired Geek-SEO content-writer, which already had these
+        /// columns. Migrations only run on the PostgreSQL path (SQLite uses EnsureCreated).
+        /// </remarks>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Advertisement",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "DepartmentListExcerpt",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "DisplayTitle",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "HeroExcerpt",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "NewspaperExcerpt",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "SourceAppName",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<int>(
-                name: "SourceAppOrder",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "integer",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ToolPageExcerpt",
-                schema: "content_writer",
-                table: "GeneratedContents",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql("""
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "Advertisement" text;
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "DepartmentListExcerpt" text NOT NULL DEFAULT '';
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "DisplayTitle" text;
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "HeroExcerpt" text NOT NULL DEFAULT '';
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "NewspaperExcerpt" text NOT NULL DEFAULT '';
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "SourceAppName" text;
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "SourceAppOrder" integer;
+                ALTER TABLE content_writer."GeneratedContents" ADD COLUMN IF NOT EXISTS "ToolPageExcerpt" text NOT NULL DEFAULT '';
+                """);
         }
 
         /// <inheritdoc />
