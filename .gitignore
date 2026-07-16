@@ -9,3 +9,4 @@ bin/
 obj/
 .DS_Store
 mcp.json
+.claude.json

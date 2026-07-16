@@ -47,6 +47,8 @@ public interface IGeekBackendClient
         GeekBlogPostPayload payload,
         int? existingPostId,
         CancellationToken cancellationToken = default);
+
+    Task<JsonElement> GetCategoriesAsync(string lang, CancellationToken cancellationToken = default);
 }
 
 public sealed class GeekBackendClient : IGeekBackendClient
@@ -117,6 +119,17 @@ public sealed class GeekBackendClient : IGeekBackendClient
             : payload.Sections.Count;
 
         return new GeekBlogPostResult(postId, slug, languageCode, sectionCount, existingPostId is not null);
+    }
+
+    public async Task<JsonElement> GetCategoriesAsync(string lang, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/blog/categories?lang={lang}");
+        request.Headers.Add(ApiKeyHeader, _options.ApiKey);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
     }
 }
 

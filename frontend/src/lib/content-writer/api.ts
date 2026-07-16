@@ -17,9 +17,6 @@ const SEO_API_URL =
     ? "https://content-writer-backend-production.up.railway.app"
     : "http://localhost:5051");
 
-const GEEK_BACKEND_URL =
-  process.env.NEXT_PUBLIC_GEEK_BACKEND_URL ?? "https://api.geekatyourspot.com";
-
 /** Content Writer routes are hosted on GeekSeoBackend (same origin as SEO API). */
 const API_BASE_URL = SEO_API_URL;
 
@@ -161,7 +158,7 @@ export function generateToolsContent(projectId: string): Promise<GeneratedConten
 }
 
 export async function getGeekBackendCategories(lang = "en"): Promise<CategoryOption[]> {
-  const response = await fetch(`${GEEK_BACKEND_URL}/api/blog/categories?lang=${lang}`);
+  const response = await fetch(`${API_BASE_URL}/api/categories?lang=${lang}`);
   if (!response.ok) {
     throw new ApiError(`Could not load categories from GeekBackend (${response.status}).`, response.status);
   }
