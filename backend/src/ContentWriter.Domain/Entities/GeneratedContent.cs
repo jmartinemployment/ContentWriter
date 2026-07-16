@@ -23,6 +23,9 @@ public class GeneratedContent
     /// <summary>Blurb under the page H1 (pillar, tool, blog).</summary>
     public string HeroSummary { get; set; } = string.Empty;
 
+    /// <summary>Home-page feature card copy (pillar, tool, blog).</summary>
+    public string HomeSummary { get; set; } = string.Empty;
+
     /// <summary>Blog-listing teaser copy (pillar, tool, blog).</summary>
     public string BlogSummary { get; set; } = string.Empty;
 

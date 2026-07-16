@@ -63,6 +63,7 @@ public record ToolMetadataDraft(
     string DepartmentListExcerpt,
     string MainSummary,
     string HeroSummary,
+    string HomeSummary,
     string BlogSummary,
     string ToolPageExcerpt,
     string AdvertisingSummary,
@@ -71,6 +72,7 @@ public record ToolMetadataDraft(
 public record SummaryVariantsDraft(
     string MainSummary,
     string HeroSummary,
+    string HomeSummary,
     string BlogSummary,
     string AdvertisingSummary);
 

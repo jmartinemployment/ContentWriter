@@ -25,6 +25,7 @@ public sealed record GeekBlogPostPayload(
     string? MetaDescription,
     string MainSummary,
     string HeroSummary,
+    string HomeSummary,
     string BlogSummary,
     string AdvertisingSummary,
     string? JsonLdOverride,

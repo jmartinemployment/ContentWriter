@@ -101,6 +101,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 publishedAt: publishedAt,
                 mainSummary: articleRow?.MainSummary ?? string.Empty,
                 heroSummary: articleRow?.HeroSummary ?? string.Empty,
+                homeSummary: articleRow?.HomeSummary ?? string.Empty,
                 blogSummary: articleRow?.BlogSummary ?? string.Empty,
                 advertisingSummary: articleRow?.AdvertisingSummary ?? string.Empty,
                 cancellationToken: cancellationToken));
@@ -125,6 +126,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 publishedAt: publishedAt,
                 mainSummary: blogRow?.MainSummary ?? string.Empty,
                 heroSummary: blogRow?.HeroSummary ?? string.Empty,
+                homeSummary: blogRow?.HomeSummary ?? string.Empty,
                 blogSummary: blogRow?.BlogSummary ?? string.Empty,
                 advertisingSummary: blogRow?.AdvertisingSummary ?? string.Empty,
                 cancellationToken: cancellationToken));
@@ -153,6 +155,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 publishedAt: publishedAt,
                 mainSummary: toolRow.MainSummary,
                 heroSummary: toolRow.HeroSummary,
+                homeSummary: toolRow.HomeSummary,
                 blogSummary: toolRow.BlogSummary,
                 advertisingSummary: toolRow.AdvertisingSummary,
                 cancellationToken: cancellationToken));
@@ -181,6 +184,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
         DateTimeOffset publishedAt,
         string mainSummary,
         string heroSummary,
+        string homeSummary,
         string blogSummary,
         string advertisingSummary,
         CancellationToken cancellationToken)
@@ -203,6 +207,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
             MetaDescription: string.IsNullOrWhiteSpace(metaDescription) ? null : metaDescription,
             MainSummary: mainSummary,
             HeroSummary: heroSummary,
+            HomeSummary: homeSummary,
             BlogSummary: blogSummary,
             AdvertisingSummary: advertisingSummary,
             JsonLdOverride: jsonLdOverride,

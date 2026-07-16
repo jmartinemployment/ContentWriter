@@ -541,7 +541,7 @@ public class ContentPromptBuilder : IContentPromptBuilder
     }
 
     private const string ToolMetadataJsonContract =
-        "{\"departmentListExcerpt\": string (1-2 sentences for tools hub cards), \"mainSummary\": string (1-2 sentences, main-page summary), \"heroSummary\": string (1-2 sentences, blurb under tool page H1), \"blogSummary\": string (1-2 sentences, blog-listing teaser), \"toolPageExcerpt\": string (1-2 sentences for newspaper tool content column), \"advertisingSummary\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt), \"metaDescription\": string (max 160 chars, SEO only, distinct from the other six)}";
+        "{\"departmentListExcerpt\": string (1-2 sentences for tools hub cards), \"mainSummary\": string (1-2 sentences, main-page summary), \"heroSummary\": string (1-2 sentences, blurb under tool page H1), \"homeSummary\": string (1-2 sentences, home-page feature card copy), \"blogSummary\": string (1-2 sentences, blog-listing teaser), \"toolPageExcerpt\": string (1-2 sentences for newspaper tool content column), \"advertisingSummary\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt), \"metaDescription\": string (max 160 chars, SEO only, distinct from the other seven)}";
 
     public ChatCompletionRequest BuildToolBodyPrompt(
         ProjectGenerationContext context,
@@ -585,7 +585,7 @@ public class ContentPromptBuilder : IContentPromptBuilder
             .AppendLine("You write presentation metadata for a B2B tool overview page (schema.org SoftwareApplication).")
             .AppendLine("Respond with ONLY a single valid JSON object — no markdown fences:")
             .AppendLine(ToolMetadataJsonContract)
-            .AppendLine("departmentListExcerpt, mainSummary, heroSummary, blogSummary, toolPageExcerpt, advertisingSummary, and metaDescription must each use different wording.")
+            .AppendLine("departmentListExcerpt, mainSummary, heroSummary, homeSummary, blogSummary, toolPageExcerpt, advertisingSummary, and metaDescription must each use different wording.")
             .ToString();
 
         var user = new StringBuilder()
@@ -604,7 +604,7 @@ public class ContentPromptBuilder : IContentPromptBuilder
     }
 
     private const string SummaryVariantsJsonContract =
-        "{\"mainSummary\": string (1-2 sentences, main-page summary), \"heroSummary\": string (1-2 sentences, blurb under the page H1), \"blogSummary\": string (1-2 sentences, blog-listing teaser), \"advertisingSummary\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt)}";
+        "{\"mainSummary\": string (1-2 sentences, main-page summary), \"heroSummary\": string (1-2 sentences, blurb under the page H1), \"homeSummary\": string (1-2 sentences, home-page feature card copy), \"blogSummary\": string (1-2 sentences, blog-listing teaser), \"advertisingSummary\": string (2-4 sentences, longer sponsored promotional copy — not an excerpt)}";
 
     public ChatCompletionRequest BuildSummaryVariantsPrompt(
         ProjectGenerationContext context,
@@ -617,7 +617,7 @@ public class ContentPromptBuilder : IContentPromptBuilder
             .AppendLine($"You write presentation summary copy for a {contentTypeLabel} page.")
             .AppendLine("Respond with ONLY a single valid JSON object — no markdown fences:")
             .AppendLine(SummaryVariantsJsonContract)
-            .AppendLine("mainSummary, heroSummary, blogSummary, and advertisingSummary must each use different wording from each other and from the meta description provided below.")
+            .AppendLine("mainSummary, heroSummary, homeSummary, blogSummary, and advertisingSummary must each use different wording from each other and from the meta description provided below.")
             .ToString();
 
         var user = new StringBuilder()

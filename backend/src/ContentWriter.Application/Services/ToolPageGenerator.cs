@@ -121,6 +121,7 @@ public sealed class ToolPageGenerator : IToolPageGenerator
             Slug = slug,
             MainSummary = toolMetadata.MainSummary,
             HeroSummary = toolMetadata.HeroSummary,
+            HomeSummary = toolMetadata.HomeSummary,
             BlogSummary = toolMetadata.BlogSummary,
             DepartmentListExcerpt = toolMetadata.DepartmentListExcerpt,
             ToolPageExcerpt = toolMetadata.ToolPageExcerpt,

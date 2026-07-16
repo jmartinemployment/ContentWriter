@@ -131,6 +131,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
             provider, context, metadata.Title, bodyHtml, metadata.MetaDescription, "pillar", cancellationToken);
         articleRow.MainSummary = summaryVariants.MainSummary;
         articleRow.HeroSummary = summaryVariants.HeroSummary;
+        articleRow.HomeSummary = summaryVariants.HomeSummary;
         articleRow.BlogSummary = summaryVariants.BlogSummary;
         articleRow.AdvertisingSummary = summaryVariants.AdvertisingSummary;
 
@@ -232,6 +233,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
             RelatedArticleUrl = articleUrl,
             MainSummary = summaryVariants.MainSummary,
             HeroSummary = summaryVariants.HeroSummary,
+            HomeSummary = summaryVariants.HomeSummary,
             BlogSummary = summaryVariants.BlogSummary,
             AdvertisingSummary = summaryVariants.AdvertisingSummary,
             GeneratedByProvider = provider.ProviderType,
