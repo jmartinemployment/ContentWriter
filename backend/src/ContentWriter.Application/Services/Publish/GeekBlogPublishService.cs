@@ -99,6 +99,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,
+                summary: articleRow?.Summary ?? string.Empty,
                 mainSummary: articleRow?.MainSummary ?? string.Empty,
                 heroSummary: articleRow?.HeroSummary ?? string.Empty,
                 homeSummary: articleRow?.HomeSummary ?? string.Empty,
@@ -124,6 +125,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,
+                summary: blogRow?.Summary ?? string.Empty,
                 mainSummary: blogRow?.MainSummary ?? string.Empty,
                 heroSummary: blogRow?.HeroSummary ?? string.Empty,
                 homeSummary: blogRow?.HomeSummary ?? string.Empty,
@@ -153,6 +155,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
                 categorySlug: categorySlug,
                 cwJobId: project.Id.ToString(),
                 publishedAt: publishedAt,
+                summary: toolRow.Summary,
                 mainSummary: toolRow.MainSummary,
                 heroSummary: toolRow.HeroSummary,
                 homeSummary: toolRow.HomeSummary,
@@ -182,6 +185,7 @@ public class GeekBlogPublishService : IGeekBlogPublishService
         string categorySlug,
         string cwJobId,
         DateTimeOffset publishedAt,
+        string summary,
         string mainSummary,
         string heroSummary,
         string homeSummary,
@@ -193,8 +197,11 @@ public class GeekBlogPublishService : IGeekBlogPublishService
             .Select(s => new GeekBlogSectionPayload(s.SortOrder, s.HeadingTag, s.HeadingText, s.BodyContent, s.MediaUrl, s.MediaAlt))
             .ToList();
 
-        // Always body-derived, never copied from MetaDescription — the two must stay distinct.
-        var summary = DeriveSummaryFromBody(bodyHtml);
+        // LLM-written alongside the other summary variants (GenerateSummaryVariantsAsync), so it's
+        // enforced distinct from MetaDescription and them. Body-derived fallback only covers content
+        // generated before this field existed.
+        if (string.IsNullOrWhiteSpace(summary))
+            summary = DeriveSummaryFromBody(bodyHtml);
 
         var payload = new GeekBlogPostPayload(
             PostType: postType,

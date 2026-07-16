@@ -129,6 +129,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
 
         var summaryVariants = await GenerateSummaryVariantsAsync(
             provider, context, metadata.Title, bodyHtml, metadata.MetaDescription, "pillar", cancellationToken);
+        articleRow.Summary = summaryVariants.Summary;
         articleRow.MainSummary = summaryVariants.MainSummary;
         articleRow.HeroSummary = summaryVariants.HeroSummary;
         articleRow.HomeSummary = summaryVariants.HomeSummary;
@@ -231,6 +232,7 @@ public class ContentGenerationOrchestrator : IContentGenerationOrchestrator
             BodyHtml = blog.BodyHtml,
             JsonLdSchema = blogJsonLd,
             RelatedArticleUrl = articleUrl,
+            Summary = summaryVariants.Summary,
             MainSummary = summaryVariants.MainSummary,
             HeroSummary = summaryVariants.HeroSummary,
             HomeSummary = summaryVariants.HomeSummary,

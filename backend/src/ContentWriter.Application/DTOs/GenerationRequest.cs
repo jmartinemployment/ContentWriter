@@ -61,6 +61,7 @@ public record BlogDraft(
 
 public record ToolMetadataDraft(
     string DepartmentListExcerpt,
+    string Summary,
     string MainSummary,
     string HeroSummary,
     string HomeSummary,
@@ -70,6 +71,7 @@ public record ToolMetadataDraft(
     string MetaDescription);
 
 public record SummaryVariantsDraft(
+    string Summary,
     string MainSummary,
     string HeroSummary,
     string HomeSummary,

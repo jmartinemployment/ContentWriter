@@ -17,6 +17,9 @@ public class GeneratedContent
     public string Slug { get; set; } = string.Empty;
     public string BodyHtml { get; set; } = string.Empty;
 
+    /// <summary>GeekBackend post_translations.summary — LLM-written, distinct from MetaDescription and every other summary variant (pillar, tool, blog).</summary>
+    public string Summary { get; set; } = string.Empty;
+
     /// <summary>Main-page summary (pillar, tool, blog).</summary>
     public string MainSummary { get; set; } = string.Empty;
 
